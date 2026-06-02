@@ -1,0 +1,6 @@
+{
+  "name": "Torrence & Wilfred Wedding Minisite",
+  "description": "Exclusive digital invitation and RSVP portal for the wedding of Torrence Nalisi & Wilfred Katuka at Naiposha Gardens, Tigoni.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
