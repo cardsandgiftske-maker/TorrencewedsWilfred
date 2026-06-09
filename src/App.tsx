@@ -309,7 +309,7 @@ export default function App() {
                   <h4 className="font-serif text-[#4A4F3F] text-xl font-bold mb-3">Elegant Semi-Formal</h4>
                   
                   <p className="text-xs md:text-sm text-[#5D634E] leading-relaxed max-w-md font-sans">
-                    We warmly invite you to celebrate in polished yet relaxed attire. Choose colors and styles that make you feel your best &mdash; the emphasis is on elegance and comfort for our garden setting.
+                    We invite you to celebrate in polished yet relaxed attire. Choose colors and styles that make you feel your best &mdash; the emphasis is on elegance and comfort for our garden setting.
                   </p>
                 </div>
               </div>
