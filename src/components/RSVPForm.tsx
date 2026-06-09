@@ -202,8 +202,8 @@ export default function RSVPForm({ onRSVPSubmitted }: RSVPFormProps) {
                         className="w-full px-4 py-3 rounded-xl border border-sage-200 bg-[#FFFDF9] text-[#4A4F3F] focus:outline-none focus:ring-1 focus:ring-sage-400 focus:border-sage-400 text-sm transition"
                       >
                         <option value={0}>No children</option>
-                        <option value={1}>1 Child Seat</option>
-                        <option value={2}>2 Child Seats</option>
+                        <option value={1}>1 Child</option>
+                        <option value={2}>2 Children</option>
                       </select>
                     </div>
 
