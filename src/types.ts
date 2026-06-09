@@ -37,7 +37,7 @@ export const DETAILS: WeddingDetails = {
   date: "2026-09-26T11:00:00", // September 26, 2026 at 11:00 AM
   time: "11:00 A.M",
   location: "Naiposha Gardens, Tigoni",
-  locationDetails: "Nestled amidst picturesque surroundings, our venue offers an elegant and serene setting, creating the perfect backdrop for an unforgettable celebration. We look forward to warmly welcoming you to this beautiful space as we celebrate love, laughter, and happily ever after.",
+  locationDetails: "Nestled amidst picturesque surroundings, our venue offers an elegant and serene setting, creating the perfect backdrop for an unforgettable celebration. We look forward to welcoming you to this beautiful space as we celebrate love, laughter, and happily ever after.",
   dressCode: "Elegant Semi-Formal. We warmly invite you to celebrate in polished yet relaxed attire. Choose colors and styles that make you feel your best.",
   themeColors: {
     sage: "#8F9779",
