@@ -48,7 +48,7 @@ export default function RSVPForm({ onRSVPSubmitted }: RSVPFormProps) {
     setIsSubmitting(true);
     setErrorMess(null);
 
-    setTimeout(() => {
+    setTimeout(async() => {
       try {
         // Build robust real submission records inside Local Storage
         const rsvpEntry: RSVP = {
@@ -62,12 +62,15 @@ export default function RSVPForm({ onRSVPSubmitted }: RSVPFormProps) {
           timestamp: new Date().toISOString()
         };
 
-        const existingRaw = localStorage.getItem('wedding_rsvps');
-        const rsvps: RSVP[] = existingRaw ? JSON.parse(existingRaw) : [];
-        
-        // Push and write back
-        rsvps.push(rsvpEntry);
-        localStorage.setItem('wedding_rsvps', JSON.stringify(rsvps));
+       await addDoc(collection(db, "wedding_rsvps"), {
+  name: rsvpEntry.name,
+  attending: rsvpEntry.attending,
+  guestsCount: rsvpEntry.guestsCount,
+  childSeatsCount: rsvpEntry.childSeatsCount,
+  dietary: rsvpEntry.dietary,
+  wishes: rsvpEntry.wishes,
+  createdAt: serverTimestamp()
+});
 
         setIsSubmitting(false);
         setIsSuccess(true);
