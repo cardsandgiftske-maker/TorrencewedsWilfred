@@ -77,10 +77,10 @@ export default function RSVPForm({ onRSVPSubmitted }: RSVPFormProps) {
         if (onRSVPSubmitted) {
           onRSVPSubmitted();
         }
-      } catch (err) {
-        setIsSubmitting(false);
-        setErrorMess("An error occurred. Please try again.");
-      }
+      catch (error) {
+  console.error("Firebase error:", error);
+  setErrorMess(Error: ${error instanceof Error ? error.message : "Unknown error"});
+}
     }, 1200);
   };
 
