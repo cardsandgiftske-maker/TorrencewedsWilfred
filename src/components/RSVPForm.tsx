@@ -55,8 +55,8 @@ export default function RSVPForm({ onRSVPSubmitted }: RSVPFormProps) {
       attending: formData.attending,
       guestsCount: formData.attending ? formData.guestsCount : 0,
       childSeatsCount: formData.attending ? formData.childSeatsCount : 0,
-      dietary: formData.dietary.trim() || undefined,
-      wishes: formData.wishes.trim() || undefined,
+      dietary: formData.dietary.trim(),
+      wishes: formData.wishes.trim(),
       timestamp: new Date().toISOString()
     };
 
