@@ -43,44 +43,48 @@ export default function RSVPForm({ onRSVPSubmitted }: RSVPFormProps) {
     setShowConfirmModal(true);
   };
 
-  const handleConfirmSubmit = () => {
-    setShowConfirmModal(false);
-    setIsSubmitting(true);
-    setErrorMess(null);
+  const handleConfirmSubmit = async () => {
+  setShowConfirmModal(false);
+  setIsSubmitting(true);
+  setErrorMess(null);
 
-    setTimeout(async() => {
-      try {
-        // Build robust real submission records inside Local Storage
-        const rsvpEntry: RSVP = {
-          id: 'rsvp_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-          name: formData.name.trim(),
-          attending: formData.attending,
-          guestsCount: formData.attending ? formData.guestsCount : 0,
-          childSeatsCount: formData.attending ? formData.childSeatsCount : 0,
-          dietary: formData.dietary.trim() || undefined,
-          wishes: formData.wishes.trim() || undefined,
-          timestamp: new Date().toISOString()
-        };
+  try {
+    const rsvpEntry: RSVP = {
+      id: 'rsvp_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+      name: formData.name.trim(),
+      attending: formData.attending,
+      guestsCount: formData.attending ? formData.guestsCount : 0,
+      childSeatsCount: formData.attending ? formData.childSeatsCount : 0,
+      dietary: formData.dietary.trim() || undefined,
+      wishes: formData.wishes.trim() || undefined,
+      timestamp: new Date().toISOString()
+    };
 
-       await addDoc(collection(db, "wedding_rsvps"), {
-  name: rsvpEntry.name,
-  attending: rsvpEntry.attending,
-  guestsCount: rsvpEntry.guestsCount,
-  childSeatsCount: rsvpEntry.childSeatsCount,
-  dietary: rsvpEntry.dietary,
-  wishes: rsvpEntry.wishes,
-  createdAt: serverTimestamp()
-});
+    await addDoc(collection(db, "wedding_rsvps"), {
+      name: rsvpEntry.name,
+      attending: rsvpEntry.attending,
+      guestsCount: rsvpEntry.guestsCount,
+      childSeatsCount: rsvpEntry.childSeatsCount,
+      dietary: rsvpEntry.dietary,
+      wishes: rsvpEntry.wishes,
+      createdAt: serverTimestamp()
+    });
 
-        setIsSubmitting(false);
-        setIsSuccess(true);
-        if (onRSVPSubmitted) {
-          onRSVPSubmitted();
-        }
-      catch (error) {
-  console.error("Firebase error:", error);
-  setErrorMess(Error: ${error instanceof Error ? error.message : "Unknown error"});
-}
+    setIsSubmitting(false);
+    setIsSuccess(true);
+
+    if (onRSVPSubmitted) {
+      onRSVPSubmitted();
+    }
+
+  } catch (error) {
+    console.error("Firebase error:", error);
+    setErrorMess(
+      Error: ${error instanceof Error ? error.message : "Unknown error"}
+    );
+    setIsSubmitting(false);
+  }
+};
     }, 1200);
   };
 
