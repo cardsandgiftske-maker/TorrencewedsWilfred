@@ -7,6 +7,12 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, User, Plus, Utensils, Award, Check } from 'lucide-react';
 import { RSVP } from '../types';
+import { db } from "../lib/firebase";
+import {
+  collection,
+  addDoc,
+  serverTimestamp
+} from "firebase/firestore";
 
 interface RSVPFormProps {
   onRSVPSubmitted: () => void;
