@@ -85,9 +85,6 @@ export default function RSVPForm({ onRSVPSubmitted }: RSVPFormProps) {
     setIsSubmitting(false);
   }
 };
-    }, 1200);
-  };
-
   const handleReset = () => {
     setFormData({
       name: '',
