@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, User, Plus, Utensils, Award, Check } from 'lucide-react';
 import { RSVP } from '../types';
-import { db } from "../components/firebase";
+import { db } from "./firebase";
 import {
   collection,
   addDoc,
