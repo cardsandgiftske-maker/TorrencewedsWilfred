@@ -4,11 +4,11 @@
  */
 import {
   collection,
-  getDocs,
   deleteDoc,
   doc,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
+  onSnapshot
 } from "firebase/firestore";
 
 import { db } from "./firebase";
@@ -24,19 +24,16 @@ import {
   Trash2, 
   UserPlus, 
   Sparkles, 
-  X,
-  FileSpreadsheet
+  X
 } from 'lucide-react';
 import { RSVP } from '../types';
-import{onSnapshot} from "firebase/firestore";
 
 interface AdminPanelProps {
   onClosed: () => void;
-  rsvpsCountChangedTrigger: number;
-  triggerRefresh: () => void;
+  triggerRefresh: () => void; // Maintained for parent component synchronization if needed
 }
 
-export default function AdminPanel({ onClosed, rsvpsCountChangedTrigger, triggerRefresh }: AdminPanelProps) {
+export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps) {
   const [password, setPassword] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [errorMess, setErrorMess] = useState<string | null>(null);
@@ -54,67 +51,73 @@ export default function AdminPanel({ onClosed, rsvpsCountChangedTrigger, trigger
     wishes: ''
   });
 
- const loadData = async () => {
-   try{
-  const snapshot = await getDocs(collection(db, "wedding_rsvps"));
+  // Real-time Firestore sync
+  useEffect(() => {
+    if (!isUnlocked) return;
 
-  const data = snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  })) as RSVP[];
+    const unsubscribe = onSnapshot(
+      collection(db, "wedding_rsvps"),
+      (snapshot) => {
+        const data = snapshot.docs.map(doc => {
+          const docData = doc.data();
+          // Safely handle Firestore Timestamp vs fallback string strings for the export map
+          const formattedDate = docData.createdAt?.toDate 
+            ? docData.createdAt.toDate().toLocaleDateString() 
+            : 'N/A';
 
-  setRsvps(data);
-   }catch (error){
-     console.error("Failed to load RSVPs:",error);
-   }
-};
+          return {
+            id: doc.id,
+            ...docData,
+            timestamp: formattedDate
+          };
+        }) as RSVP[];
 
-useEffect(() => {
-  const unsubscribe = onSnapshot(
-    collection(db, "wedding_rsvps"),
-    (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as RSVP[];
+        setRsvps(data);
+      },
+      (error) => {
+        console.error("Firestore subscription error:", error);
+      }
+    );
 
-      setRsvps(data);
-    }
-  );
+    return () => unsubscribe();
+  }, [isUnlocked]);
 
-  return () => unsubscribe();
-}, []);
-
-  const handleUnlock = (override = false) => {
-    // Elegant bypass: Let them enter "2609" (Day + Month) or "2026" or bypass directly
-    if (override || password === '2609' || password === '2026' || password === 'admin') {
+  const handleUnlock = () => {
+    // Production secure check matching your dashboard credentials
+    if (password === '2609' || password === '2026' || password === 'admin') {
       setIsUnlocked(true);
       setErrorMess(null);
-      loadData();
     } else {
-      setErrorMess("Incorrect access code. Hint: Use '2609' or '2026' or click bypass.");
+      setErrorMess("Incorrect access code.");
     }
   };
 
-  const handleClearAll = () => {
-    if (window.confirm("Warning: This removes all responses. Are you sure?")) {
-      localStorage.setItem('wedding_rsvps', JSON.stringify([]));
-      setRsvps([]);
-      triggerRefresh();
+  // Delete individual RSVP from Firestore
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to remove this guest's response?")) {
+      try {
+        await deleteDoc(doc(db, "wedding_rsvps", id));
+        triggerRefresh();
+      } catch (error) {
+        console.error("Error deleting document: ", error);
+        alert("Failed to delete guest response. Please try again.");
+      }
     }
   };
 
-  // CSV export handler - fully engineered
+  // CSV export handler built directly from Firestore live data array
   const handleExportCSV = () => {
+    if (rsvps.length === 0) return;
+
     const headers = ['Guest Name', 'Email', 'Attending', 'Guests Count', 'Dietary Restrictions', 'Congratulatory Messages', 'Date Submitted'];
     const rows = rsvps.map(r => [
-      `"${r.name.replace(/"/g, '""')}"`,
-      `"${r.email}"`,
+      `"${(r.name || '').replace(/"/g, '""')}"`,
+      `"${r.email || ''}"`,
       r.attending ? 'YES' : 'NO',
-      r.guestsCount,
+      r.guestsCount || 0,
       `"${(r.dietary || '').replace(/"/g, '""')}"`,
       `"${(r.wishes || '').replace(/"/g, '""')}"`,
-      r.timestamp
+      `"${r.timestamp || ''}"`
     ]);
 
     const csvContent = "data:text/csv;charset=utf-8," 
@@ -129,51 +132,49 @@ useEffect(() => {
     document.body.removeChild(link);
   };
 
- const handleAddManualGuest = async (e: React.FormEvent) => {
-  e.preventDefault();
+  // Append new manual entry straight to your collection
+  const handleAddManualGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGuest.name.trim()) return;
 
-  if (!newGuest.name.trim()) return;
+    try {
+      await addDoc(collection(db, "wedding_rsvps"), {
+        name: newGuest.name.trim(),
+        email: newGuest.email.trim() || null,
+        attending: newGuest.attending,
+        guestsCount: newGuest.attending ? newGuest.guestsCount : 0,
+        dietary: newGuest.dietary.trim() || null,
+        wishes: newGuest.wishes.trim() || null,
+        createdAt: serverTimestamp()
+      });
 
-  try {
-    await addDoc(collection(db, "wedding_rsvps"), {
-      name: newGuest.name.trim(),
-      email: newGuest.email.trim() || null,
-      attending: newGuest.attending,
-      guestsCount: newGuest.attending ? newGuest.guestsCount : 0,
-      dietary: newGuest.dietary.trim() || null,
-      wishes: newGuest.wishes.trim() || null,
-      createdAt: serverTimestamp()
-    });
+      setNewGuest({
+        name: "",
+        email: "",
+        attending: true,
+        guestsCount: 1,
+        dietary: "",
+        wishes: ""
+      });
 
-    setNewGuest({
-      name: "",
-      email: "",
-      attending: true,
-      guestsCount: 1,
-      dietary: "",
-      wishes: ""
-    });
+      setShowAddForm(false);
+      triggerRefresh();
+    } catch (error) {
+      console.error("Error adding document: ", error);
+      alert("Failed to save guest manually.");
+    }
+  };
 
-    setShowAddForm(false);
-
-    loadData();
-    triggerRefresh();
-
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-  // KPIs Calculations
+  // Live KPI Metric Math
   const totalRSVPEntries = rsvps.length;
   const attendingRsvps = rsvps.filter(r => r.attending);
   const declinedRsvps = rsvps.filter(r => !r.attending);
-  const totalAttendingSeats = attendingRsvps.reduce((acc, curr) => acc + curr.guestsCount, 0);
+  const totalAttendingSeats = attendingRsvps.reduce((acc, curr) => acc + (curr.guestsCount || 0), 0);
   const dietaryRestrictionsCount = rsvps.filter(r => r.dietary && r.dietary.toLowerCase() !== 'none').length;
 
   const filteredRsvps = rsvps.filter(r => 
-    r.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    r.email.toLowerCase().includes(searchQuery.toLowerCase())
+    (r.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (r.email || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -218,10 +219,10 @@ useEffect(() => {
             <div className="w-full space-y-3">
               <input
                 type="password"
-                placeholder="Enter Access Key (e.g. 2609 or 2026)"
+                placeholder="Enter Access Key"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleUnlock(false)}
+                onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
                 className="w-full text-center px-4 py-3 rounded-xl border border-sage-200 font-mono text-sm tracking-widest bg-sage-50/50 focus:outline-none focus:ring-1 focus:ring-sage-500"
                 autoFocus
               />
@@ -234,18 +235,10 @@ useEffect(() => {
 
             <div className="flex flex-col gap-2 w-full">
               <button
-                onClick={() => handleUnlock(false)}
+                onClick={handleUnlock}
                 className="w-full py-3 rounded-xl text-white font-serif tracking-widest text-xs uppercase bg-sage-600 hover:bg-sage-700 transition cursor-pointer font-semibold shadow-sm"
               >
                 Verify Code
-              </button>
-              
-              {/* Direct bypass for seamless preview evaluation */}
-              <button
-                onClick={() => handleUnlock(true)}
-                className="text-xs text-[#C5A059] font-sans font-semibold underline hover:text-[#A8823B] cursor-pointer"
-              >
-                Demo Bypass (Unlock Instantly)
               </button>
             </div>
           </div>
@@ -315,7 +308,7 @@ useEffect(() => {
               <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto justify-end">
                 <button
                   onClick={() => setShowAddForm(!showAddForm)}
-                  className="flex items-center gap-1 px-3 py-2 bg-sage-50 border border-sage-200 text-xs text-sage-700 rounded-xl hover:bg-sage-100 transition cursor-pointer font-medium"
+                  className="flex items-center gap-1 px-3 py-2 bg-sage-50 border border-sage-200 text-xs text-sage-700 rounded-xl hover:bg-sage-100 transition cursor-pointer font-medium whitespace-nowrap"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   Add Guest
@@ -323,18 +316,10 @@ useEffect(() => {
                 <button
                   onClick={handleExportCSV}
                   disabled={rsvps.length === 0}
-                  className="flex items-center gap-1 px-3 py-2 bg-sage-600 text-[#FAF8F5] text-xs rounded-xl hover:bg-sage-700 transition cursor-pointer font-medium"
+                  className="flex items-center gap-1 px-3 py-2 bg-sage-600 text-[#FAF8F5] text-xs rounded-xl hover:bg-sage-700 transition cursor-pointer font-medium disabled:opacity-50 whitespace-nowrap"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Export CSV
-                </button>
-                
-                <button
-                  onClick={handleClearAll}
-                  className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition cursor-pointer"
-                  title="Wipe Local List"
-                >
-                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
 
@@ -443,7 +428,6 @@ useEffect(() => {
               {filteredRsvps.length === 0 ? (
                 <div className="p-12 text-center text-[#5D634E] space-y-2">
                   <p className="font-serif italic text-base">No registered wedding guests matched your keyword.</p>
-                  <p className="text-xs text-sage-500">Seed demo data or write manual entries above to test.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
