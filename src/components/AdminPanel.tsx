@@ -2,7 +2,16 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
+import {
+  collection,
+  getDocs,
+  deleteDoc,
+  doc,
+  addDoc,
+  serverTimestamp
+} from "firebase/firestore";
 
+import { db } from ".components/firebase";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -19,55 +28,13 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { RSVP } from '../types';
+import{onSnapshot} from "firebase/firestore";
 
 interface AdminPanelProps {
   onClosed: () => void;
   rsvpsCountChangedTrigger: number;
   triggerRefresh: () => void;
 }
-
-// Injected demo RSVPs so the board starts populated and looking like a real, lively wedding guestlist
-const DEFAULT_DEMO_GUESTLIST: RSVP[] = [
-  {
-    id: "demo_1",
-    name: "Alvina Wanjiku",
-    email: "alvina.w@gmail.com",
-    attending: true,
-    guestsCount: 2,
-    dietary: "Gluten free preferred",
-    wishes: "Cannot wait to see you walk down the aisle, Torrence! Much love!",
-    timestamp: "2026-06-01T09:12:00.000Z"
-  },
-  {
-    id: "demo_2",
-    name: "Davis Katuka",
-    email: "davis.k@outlook.com",
-    attending: true,
-    guestsCount: 1,
-    dietary: "none",
-    wishes: "Best wishes to my brother Wilfred and new sister Torrence!",
-    timestamp: "2026-06-01T14:45:00.000Z"
-  },
-  {
-    id: "demo_3",
-    name: "Dr. Evelyn Nalisi",
-    email: "doc.evelyn@university.ac.ke",
-    attending: true,
-    guestsCount: 2,
-    dietary: "Vegetarian",
-    wishes: "Such a beautiful couple. Hope Church blessings are with you.",
-    timestamp: "2026-06-02T08:22:00.000Z"
-  },
-  {
-    id: "demo_4",
-    name: "Boutros Gitau",
-    email: "boutros.git@safari.co.ke",
-    attending: false,
-    guestsCount: 0,
-    wishes: "So sorry I cannot make it, I will be out of the country. Sending all my love and congratulations!",
-    timestamp: "2026-06-02T10:05:00.000Z"
-  }
-];
 
 export default function AdminPanel({ onClosed, rsvpsCountChangedTrigger, triggerRefresh }: AdminPanelProps) {
   const [password, setPassword] = useState('');
@@ -87,20 +54,36 @@ export default function AdminPanel({ onClosed, rsvpsCountChangedTrigger, trigger
     wishes: ''
   });
 
-  const loadData = () => {
-    const raw = localStorage.getItem('wedding_rsvps');
-    if (!raw) {
-      // Auto seed with beautiful demo guests so the page is impressive instantly
-      localStorage.setItem('wedding_rsvps', JSON.stringify(DEFAULT_DEMO_GUESTLIST));
-      setRsvps(DEFAULT_DEMO_GUESTLIST);
-    } else {
-      setRsvps(JSON.parse(raw));
-    }
-  };
+ const loadData = async () => {
+   try{
+  const snapshot = await getDocs(collection(db, "wedding_rsvps"));
 
-  useEffect(() => {
-    loadData();
-  }, [rsvpsCountChangedTrigger]);
+  const data = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  })) as RSVP[];
+
+  setRsvps(data);
+   }catch (error){
+     console.error("Failed to load RSVPs:",error);
+   }
+};
+
+useEffect(() => {
+  const unsubscribe = onSnapshot(
+    collection(db, "wedding_rsvps"),
+    (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as RSVP[];
+
+      setRsvps(data);
+    }
+  );
+
+  return () => unsubscribe();
+}, []);
 
   const handleUnlock = (override = false) => {
     // Elegant bypass: Let them enter "2609" (Day + Month) or "2026" or bypass directly
@@ -111,21 +94,6 @@ export default function AdminPanel({ onClosed, rsvpsCountChangedTrigger, trigger
     } else {
       setErrorMess("Incorrect access code. Hint: Use '2609' or '2026' or click bypass.");
     }
-  };
-
-  const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to remove this RSVP entry?")) {
-      const updated = rsvps.filter(r => r.id !== id);
-      localStorage.setItem('wedding_rsvps', JSON.stringify(updated));
-      setRsvps(updated);
-      triggerRefresh();
-    }
-  };
-
-  const handleSeedTestData = () => {
-    localStorage.setItem('wedding_rsvps', JSON.stringify(DEFAULT_DEMO_GUESTLIST));
-    setRsvps(DEFAULT_DEMO_GUESTLIST);
-    triggerRefresh();
   };
 
   const handleClearAll = () => {
@@ -161,37 +129,40 @@ export default function AdminPanel({ onClosed, rsvpsCountChangedTrigger, trigger
     document.body.removeChild(link);
   };
 
-  const handleAddManualGuest = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newGuest.name.trim()) return;
+ const handleAddManualGuest = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    const rsvp: RSVP = {
-      id: 'manual_' + Date.now(),
+  if (!newGuest.name.trim()) return;
+
+  try {
+    await addDoc(collection(db, "wedding_rsvps"), {
       name: newGuest.name.trim(),
-      email: newGuest.email.trim() ? newGuest.email.trim().toLowerCase() : undefined,
+      email: newGuest.email.trim() || null,
       attending: newGuest.attending,
       guestsCount: newGuest.attending ? newGuest.guestsCount : 0,
-      dietary: newGuest.dietary.trim() || undefined,
-      wishes: newGuest.wishes.trim() || undefined,
-      timestamp: new Date().toISOString()
-    };
+      dietary: newGuest.dietary.trim() || null,
+      wishes: newGuest.wishes.trim() || null,
+      createdAt: serverTimestamp()
+    });
 
-    const updated = [...rsvps, rsvp];
-    localStorage.setItem('wedding_rsvps', JSON.stringify(updated));
-    setRsvps(updated);
-    
-    // reset form
     setNewGuest({
-      name: '',
-      email: '',
+      name: "",
+      email: "",
       attending: true,
       guestsCount: 1,
-      dietary: '',
-      wishes: ''
+      dietary: "",
+      wishes: ""
     });
+
     setShowAddForm(false);
+
+    loadData();
     triggerRefresh();
-  };
+
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   // KPIs Calculations
   const totalRSVPEntries = rsvps.length;
