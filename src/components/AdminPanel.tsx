@@ -11,7 +11,7 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 
-import { db } from ".components/firebase";
+import { db } from "./firebase";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
