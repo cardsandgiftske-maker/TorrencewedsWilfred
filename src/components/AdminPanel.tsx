@@ -328,12 +328,7 @@ useEffect(() => {
                   <Download className="w-3.5 h-3.5" />
                   Export CSV
                 </button>
-                <button
-                  onClick={handleSeedTestData}
-                  className="px-2.5 py-2 border border-dashed border-amber-300 bg-amber-50/50 text-amber-700 text-[10px] uppercase tracking-wider rounded-xl hover:bg-amber-100 transition font-bold"
-                >
-                  Seed Demo Data
-                </button>
+                
                 <button
                   onClick={handleClearAll}
                   className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition cursor-pointer"
