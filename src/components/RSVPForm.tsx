@@ -42,7 +42,9 @@ export default function RSVPForm({ onRSVPSubmitted }: RSVPFormProps) {
     setErrorMess(null);
     setShowConfirmModal(true);
   };
-
+const handleSeedTestData = async () => {
+  alert("Demo data disabled because the app now uses Firebase.");
+};
   const handleConfirmSubmit = async () => {
   setShowConfirmModal(false);
   setIsSubmitting(true);
