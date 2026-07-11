@@ -1,0 +1,29 @@
+{
+  "collections": {
+    "rsvps": {
+      "description": "Wedding RSVPs submitted by guests",
+      "fields": {
+        "name": {
+          "type": "string",
+          "required": true
+        },
+        "status": {
+          "type": "string",
+          "required": true
+        },
+        "dietary": {
+          "type": "string",
+          "required": false
+        },
+        "message": {
+          "type": "string",
+          "required": false
+        },
+        "timestamp": {
+          "type": "number",
+          "required": true
+        }
+      }
+    }
+  }
+}

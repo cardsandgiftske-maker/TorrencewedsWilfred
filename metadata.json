@@ -1,0 +1,6 @@
+{
+  "name": "Vivian & Chris Wedding Minisite",
+  "description": "Elegant wedding minisite for Vivian Akinyi & Chris Blackshaw featuring an interactive envelope with wax seal, classy floral pastel themes, wedding details, and gifting guide.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
