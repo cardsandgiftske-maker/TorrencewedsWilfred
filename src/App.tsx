@@ -9,16 +9,14 @@ import Countdown from './components/Countdown';
 import DressCode from './components/DressCode';
 import Gifting from './components/Gifting';
 import RSVPForm from './components/RSVPForm';
+import waxSealUrl from './assets/images/wax_seal_gold_1783692877922.jpg';
+import floralBgUrl from './assets/images/floral_watercolor_1783692893236.jpg';
+import severinSeaLodgeUrl from './assets/images/severin_sea_lodge_1783693759831.jpg';
 
 export default function App() {
   const [isOpen, setIsOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Paths to generated assets
-  const waxSealUrl = '/src/assets/images/wax_seal_gold_1783692877922.jpg';
-  const floralBgUrl = '/src/assets/images/floral_watercolor_1783692893236.jpg';
-  const severinSeaLodgeUrl = '/src/assets/images/severin_sea_lodge_1783693759831.jpg';
 
   // Toggle background music
   const toggleMusic = () => {
