@@ -13,6 +13,8 @@ export interface RSVP {
   dietary?: string;
   wishes?: string;
   timestamp: string;
+  tableNumber?: number | null;
+  tableCode?: string | null;
 }
 
 export interface WeddingDetails {
