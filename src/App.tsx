@@ -24,6 +24,7 @@ import Countdown from './components/Countdown';
 import ProgramTimeline from './components/ProgramTimeline';
 import RSVPForm from './components/RSVPForm';
 import AdminPanel from './components/AdminPanel';
+import TableLookup from './components/TableLookup';
 import { DETAILS } from './types';
 
 // @ts-ignore
@@ -360,7 +361,10 @@ export default function App() {
               </div>
             </section>
 
-            {/* ================= SECTION G: RSVP FORM PORTAL ================= */}
+            {/* ================= SECTION G: TABLE ALLOCATION ================= */}
+            <TableLookup />
+
+            {/* ================= SECTION H: RSVP FORM PORTAL ================= */}
             <section id="rsvp-section" className="relative overflow-hidden py-16 bg-[#FAF7F2] border-b border-sage-100">
               <div 
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none select-none opacity-[0.020]" 
@@ -369,7 +373,7 @@ export default function App() {
               <RSVPForm onRSVPSubmitted={triggerRefresh} />
             </section>
 
-            {/* ================= SECTION H: FOOTER ================= */}
+            {/* ================= SECTION I: FOOTER ================= */}
             <footer className="relative overflow-hidden py-16 text-center select-none bg-[#FAF9F6] border-t border-sage-100/30">
               <div 
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none select-none opacity-[0.020]" 
@@ -398,7 +402,6 @@ export default function App() {
               {showAdmin && (
                 <AdminPanel 
                   onClosed={() => setShowAdmin(false)} 
-                  rsvpsCountChangedTrigger={rsvpsTick}
                   triggerRefresh={triggerRefresh}
                 />
               )}
