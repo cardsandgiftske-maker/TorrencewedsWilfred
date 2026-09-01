@@ -8,7 +8,9 @@ import {
   doc,
   addDoc,
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  updateDoc,
+  setDoc
 } from "firebase/firestore";
 
 import { db } from "./firebase";
@@ -24,7 +26,10 @@ import {
   Trash2, 
   UserPlus, 
   Sparkles, 
-  X
+  X,
+  LayoutGrid,
+  Save,
+  Copy
 } from 'lucide-react';
 import { RSVP } from '../types';
 
@@ -50,6 +55,85 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
     dietary: '',
     wishes: ''
   });
+
+  const TABLE_COUNT = 24;
+  const TABLE_CAPACITY = 11;
+  const [savingTable, setSavingTable] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const generateGuestCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = 'TW';
+    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  };
+
+  const getTableOccupancy = (tableNumber: number, excludingGuestId?: string) =>
+    rsvps.reduce((total, guest) => {
+      if (!guest.attending || guest.id === excludingGuestId || guest.tableNumber !== tableNumber) return total;
+      return total + (guest.guestsCount || 0);
+    }, 0);
+
+  const handleAssignTable = async (guest: RSVP, tableValue: string) => {
+    if (!tableValue) return;
+    const tableNumber = Number(tableValue);
+    const seats = guest.attending ? (guest.guestsCount || 0) : 0;
+    if (!guest.attending) {
+      alert('Only attending guests can be assigned a table.');
+      return;
+    }
+    const occupied = getTableOccupancy(tableNumber, guest.id);
+    if (occupied + seats > TABLE_CAPACITY) {
+      alert(`Table ${tableNumber} only has ${TABLE_CAPACITY - occupied} seat(s) remaining.`);
+      return;
+    }
+
+    setSavingTable(guest.id);
+    try {
+      const code = guest.tableCode || generateGuestCode();
+      await updateDoc(doc(db, 'wedding_rsvps', guest.id), { tableNumber, tableCode: code });
+      await setDoc(doc(db, 'table_allocations', code), {
+        guestId: guest.id,
+        name: guest.name,
+        tableNumber,
+        seats,
+        code,
+        updatedAt: serverTimestamp()
+      });
+      triggerRefresh();
+    } catch (error) {
+      console.error('Error assigning table:', error);
+      alert('Failed to save the table allocation. Please try again.');
+    } finally {
+      setSavingTable(null);
+    }
+  };
+
+  const handleRemoveTable = async (guest: RSVP) => {
+    if (!guest.tableNumber) return;
+    if (!window.confirm(`Remove ${guest.name} from Table ${guest.tableNumber}?`)) return;
+    setSavingTable(guest.id);
+    try {
+      await updateDoc(doc(db, 'wedding_rsvps', guest.id), { tableNumber: null, tableCode: null });
+      if (guest.tableCode) await deleteDoc(doc(db, 'table_allocations', guest.tableCode));
+      triggerRefresh();
+    } catch (error) {
+      console.error('Error removing table:', error);
+      alert('Failed to remove the table allocation.');
+    } finally {
+      setSavingTable(null);
+    }
+  };
+
+  const copyGuestCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(null), 1800);
+    } catch {
+      // Clipboard may be unavailable in some browsers.
+    }
+  };
 
   // Real-time Firestore sync
   useEffect(() => {
@@ -96,7 +180,11 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to remove this guest's response?")) {
       try {
+        const guest = rsvps.find(r => r.id === id);
         await deleteDoc(doc(db, "wedding_rsvps", id));
+        if (guest?.tableCode) {
+          await deleteDoc(doc(db, "table_allocations", guest.tableCode));
+        }
         triggerRefresh();
       } catch (error) {
         console.error("Error deleting document: ", error);
@@ -109,12 +197,14 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
   const handleExportCSV = () => {
     if (rsvps.length === 0) return;
 
-    const headers = ['Guest Name', 'Email', 'Attending', 'Guests Count', 'Dietary Restrictions', 'Congratulatory Messages', 'Date Submitted'];
+    const headers = ['Guest Name', 'Email', 'Attending', 'Guests Count', 'Table', 'Guest Code', 'Dietary Restrictions', 'Congratulatory Messages', 'Date Submitted'];
     const rows = rsvps.map(r => [
       `"${(r.name || '').replace(/"/g, '""')}"`,
       `"${r.email || ''}"`,
       r.attending ? 'YES' : 'NO',
       r.guestsCount || 0,
+      r.tableNumber || '',
+      `"${r.tableCode || ''}"`,
       `"${(r.dietary || '').replace(/"/g, '""')}"`,
       `"${(r.wishes || '').replace(/"/g, '""')}"`,
       `"${r.timestamp || ''}"`
@@ -145,6 +235,8 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
         guestsCount: newGuest.attending ? newGuest.guestsCount : 0,
         dietary: newGuest.dietary.trim() || null,
         wishes: newGuest.wishes.trim() || null,
+        tableNumber: null,
+        tableCode: null,
         createdAt: serverTimestamp()
       });
 
@@ -423,6 +515,40 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
               )}
             </AnimatePresence>
 
+            {/* ================= TABLE ALLOCATION OVERVIEW ================= */}
+            <div className="bg-white rounded-2xl border border-sage-100 shadow-xs overflow-hidden">
+              <div className="p-5 border-b border-sage-100 flex items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 text-[#4A4F3F]">
+                    <LayoutGrid className="w-4 h-4 text-[#C5A059]" />
+                    <h4 className="font-serif text-lg font-semibold">Reception Table Allocation</h4>
+                  </div>
+                  <p className="text-[11px] text-sage-500 mt-1">24 restaurant tables · maximum 11 seats per table</p>
+                </div>
+                <div className="text-right">
+                  <span className="font-serif text-xl font-bold text-[#4A4F3F]">{rsvps.filter(g => g.attending && g.tableNumber).reduce((n, g) => n + (g.guestsCount || 0), 0)}</span>
+                  <span className="block text-[9px] uppercase tracking-wider text-sage-500">Allocated seats</span>
+                </div>
+              </div>
+              <div className="p-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {Array.from({ length: TABLE_COUNT }, (_, i) => i + 1).map((tableNumber) => {
+                  const occupied = getTableOccupancy(tableNumber);
+                  const remaining = TABLE_CAPACITY - occupied;
+                  const isFull = remaining === 0;
+                  return (
+                    <div key={tableNumber} className={`rounded-2xl border p-3 text-center ${isFull ? 'border-[#C5A059]/60 bg-[#FBF7EB]' : 'border-sage-100 bg-[#FAF9F6]'}`}>
+                      <div className={`mx-auto w-14 h-14 rounded-full border flex flex-col items-center justify-center ${isFull ? 'border-[#C5A059] bg-white' : 'border-sage-200 bg-white'}`}>
+                        <span className="text-[8px] uppercase tracking-wider text-sage-500">Table</span>
+                        <span className="font-serif text-lg font-bold text-[#4A4F3F]">{tableNumber}</span>
+                      </div>
+                      <p className="mt-2 text-[10px] font-bold text-[#4A4F3F]">{occupied}/{TABLE_CAPACITY} seats</p>
+                      <p className={`text-[9px] mt-0.5 ${isFull ? 'text-[#8B7340]' : 'text-sage-500'}`}>{isFull ? 'FULL' : `${remaining} available`}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Guestlist Table */}
             <div className="bg-white rounded-2xl border border-sage-100 shadow-xs overflow-hidden">
               {filteredRsvps.length === 0 ? (
@@ -438,6 +564,8 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
                         <th className="p-4">Email</th>
                         <th className="p-4">Attendance</th>
                         <th className="p-4 text-center">Seats</th>
+                        <th className="p-4">Table</th>
+                        <th className="p-4">Guest Code</th>
                         <th className="p-4">Dietary Notes</th>
                         <th className="p-4 max-w-sm">Wishes note</th>
                         <th className="p-4 text-center">Action</th>
@@ -459,6 +587,34 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
                           </td>
                           <td className="p-4 text-center font-bold font-mono">
                             {guest.attending ? guest.guestsCount : '—'}
+                          </td>
+                          <td className="p-4 min-w-[150px]">
+                            {guest.attending ? (
+                              <div className="flex items-center gap-1.5">
+                                <select
+                                  value={guest.tableNumber || ''}
+                                  disabled={savingTable === guest.id}
+                                  onChange={(e) => e.target.value ? handleAssignTable(guest, e.target.value) : handleRemoveTable(guest)}
+                                  className="w-full px-2 py-1.5 rounded-lg border border-sage-200 bg-white text-[11px] text-[#4A4F3F] focus:outline-none focus:ring-1 focus:ring-sage-400"
+                                >
+                                  <option value="">Unassigned</option>
+                                  {Array.from({ length: TABLE_COUNT }, (_, i) => i + 1).map((tableNumber) => {
+                                    const occupied = getTableOccupancy(tableNumber, guest.id);
+                                    const allowed = occupied + (guest.guestsCount || 0) <= TABLE_CAPACITY;
+                                    return <option key={tableNumber} value={tableNumber} disabled={!allowed}>Table {tableNumber}{allowed ? ` (${TABLE_CAPACITY - occupied} free)` : ' (full)'}</option>;
+                                  })}
+                                </select>
+                                {savingTable === guest.id && <Save className="w-3.5 h-3.5 text-sage-500 animate-pulse shrink-0" />}
+                              </div>
+                            ) : <span className="text-sage-300">—</span>}
+                          </td>
+                          <td className="p-4 min-w-[120px]">
+                            {guest.tableCode ? (
+                              <button onClick={() => copyGuestCode(guest.tableCode!)} title="Copy guest code" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#FAF9F6] border border-sage-200 font-mono text-[10px] font-bold tracking-widest text-[#4A4F3F] hover:bg-sage-50">
+                                {copiedCode === guest.tableCode ? 'COPIED' : guest.tableCode}
+                                <Copy className="w-3 h-3 text-sage-500" />
+                              </button>
+                            ) : <span className="text-sage-300 text-[10px]">Assign table first</span>}
                           </td>
                           <td className="p-4 italic text-sage-600 text-xs">
                             {guest.dietary && guest.dietary !== 'none' ? guest.dietary : <span className="text-sage-300">none</span>}
