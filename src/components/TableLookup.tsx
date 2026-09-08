@@ -8,6 +8,9 @@ interface Allocation {
   name: string;
   tableNumber: number;
   seats: number;
+  adultSeats: number;
+  childSeats: number;
+  totalSeats: number;
 }
 
 export default function TableLookup() {
@@ -33,7 +36,10 @@ export default function TableLookup() {
         setAllocation({
           name: data.name || 'Guest',
           tableNumber: Number(data.tableNumber),
-          seats: Number(data.seats || 1),
+          seats: Number(data.seats || 0),
+          adultSeats: Number(data.adultSeats ?? data.seats ?? 0),
+          childSeats: Number(data.childSeats || 0),
+          totalSeats: Number(data.totalSeats ?? ((data.seats || 0) + (data.childSeats || 0))),
         });
       }
     } catch (err) {
@@ -93,7 +99,7 @@ export default function TableLookup() {
               </div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sage-50 border border-sage-100 text-xs text-[#4A4F3F]">
                 <Users className="w-3.5 h-3.5 text-sage-600" />
-                {allocation.seats} {allocation.seats === 1 ? 'seat' : 'seats'} allocated
+                {allocation.adultSeats} adult {allocation.adultSeats === 1 ? 'seat' : 'seats'}{allocation.childSeats > 0 ? ` · ${allocation.childSeats} child ${allocation.childSeats === 1 ? 'seat' : 'seats'}` : ''}
               </div>
               <p className="text-[11px] text-sage-500 mt-5">Please ask a member of the reception team if you need assistance.</p>
             </motion.div>
