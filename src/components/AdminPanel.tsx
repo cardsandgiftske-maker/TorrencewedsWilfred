@@ -29,7 +29,8 @@ import {
   X,
   LayoutGrid,
   Save,
-  Copy
+  Copy,
+  Pencil
 } from 'lucide-react';
 import { RSVP } from '../types';
 
@@ -61,6 +62,17 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
   const [savingTable, setSavingTable] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [selectedTable, setSelectedTable] = useState<number | null>(null);
+  const [editingGuest, setEditingGuest] = useState<RSVP | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    attending: true,
+    guestsCount: 1,
+    childSeatsCount: 0,
+    dietary: '',
+    wishes: ''
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const generateGuestCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -78,7 +90,9 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
   const handleAssignTable = async (guest: RSVP, tableValue: string) => {
     if (!tableValue) return;
     const tableNumber = Number(tableValue);
-    const seats = guest.attending ? (guest.guestsCount || 0) : 0;
+    const adultSeats = guest.attending ? (guest.guestsCount || 0) : 0;
+    const childSeats = guest.attending ? (guest.childSeatsCount || 0) : 0;
+    const seats = adultSeats + childSeats;
     if (!guest.attending) {
       alert('Only attending guests can be assigned a table.');
       return;
@@ -98,9 +112,9 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
         name: guest.name,
         tableNumber,
         seats,
-        adultSeats: guest.guestsCount || 0,
-        childSeats: guest.childSeatsCount || 0,
-        totalSeats: seats + (guest.childSeatsCount || 0),
+        adultSeats,
+        childSeats,
+        totalSeats: seats,
         code,
         updatedAt: serverTimestamp()
       });
@@ -177,6 +191,76 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
       setErrorMess(null);
     } else {
       setErrorMess("Incorrect access code.");
+    }
+  };
+
+  const handleOpenEdit = (guest: RSVP) => {
+    setEditingGuest(guest);
+    setEditForm({
+      name: guest.name || '',
+      email: guest.email || '',
+      attending: guest.attending,
+      guestsCount: guest.guestsCount || 1,
+      childSeatsCount: guest.childSeatsCount || 0,
+      dietary: guest.dietary || '',
+      wishes: guest.wishes || ''
+    });
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGuest || !editForm.name.trim()) return;
+
+    const adultSeats = editForm.attending ? Math.max(1, Number(editForm.guestsCount) || 1) : 0;
+    const childSeats = editForm.attending ? Math.max(0, Number(editForm.childSeatsCount) || 0) : 0;
+    const totalSeats = adultSeats + childSeats;
+
+    if (editForm.attending && editingGuest.tableNumber) {
+      const occupied = getTableOccupancy(editingGuest.tableNumber, editingGuest.id);
+      if (occupied + totalSeats > TABLE_CAPACITY) {
+        alert(`Table ${editingGuest.tableNumber} does not have enough space for this updated RSVP. It has ${TABLE_CAPACITY - occupied} seat(s) available.`);
+        return;
+      }
+    }
+
+    setSavingEdit(true);
+    try {
+      await updateDoc(doc(db, 'wedding_rsvps', editingGuest.id), {
+        name: editForm.name.trim(),
+        email: editForm.email.trim() || null,
+        attending: editForm.attending,
+        guestsCount: adultSeats,
+        childSeatsCount: childSeats,
+        dietary: editForm.dietary.trim() || null,
+        wishes: editForm.wishes.trim() || null
+      });
+
+      if (editingGuest.tableCode) {
+        if (editForm.attending && editingGuest.tableNumber) {
+          await setDoc(doc(db, 'table_allocations', editingGuest.tableCode), {
+            guestId: editingGuest.id,
+            name: editForm.name.trim(),
+            tableNumber: editingGuest.tableNumber,
+            seats: totalSeats,
+            adultSeats,
+            childSeats,
+            totalSeats,
+            code: editingGuest.tableCode,
+            updatedAt: serverTimestamp()
+          });
+        } else {
+          await deleteDoc(doc(db, 'table_allocations', editingGuest.tableCode));
+          await updateDoc(doc(db, 'wedding_rsvps', editingGuest.id), { tableNumber: null, tableCode: null });
+        }
+      }
+
+      setEditingGuest(null);
+      triggerRefresh();
+    } catch (error) {
+      console.error('Error updating RSVP:', error);
+      alert('Failed to update RSVP. Please try again.');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -609,6 +693,96 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
               })()}
             </AnimatePresence>
 
+            <AnimatePresence>
+              {editingGuest && (
+                <motion.div
+                  className="fixed inset-0 z-[80] bg-[#3B3E31]/60 backdrop-blur-sm flex items-center justify-center p-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => !savingEdit && setEditingGuest(null)}
+                >
+                  <motion.form
+                    onSubmit={handleSaveEdit}
+                    className="bg-white w-full max-w-xl max-h-[90vh] rounded-3xl shadow-2xl overflow-y-auto"
+                    initial={{ y: 20, scale: 0.97 }}
+                    animate={{ y: 0, scale: 1 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="bg-sage-600 text-white px-6 py-5 flex items-center justify-between sticky top-0 z-10">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-[0.25em] text-champagne-300">Manage RSVP</p>
+                        <h4 className="font-serif text-2xl font-semibold">Edit Guest</h4>
+                      </div>
+                      <button type="button" onClick={() => setEditingGuest(null)} disabled={savingEdit} className="p-2 rounded-full hover:bg-sage-700 disabled:opacity-50">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <div className="p-6 space-y-5">
+                      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                        <p className="text-[11px] font-semibold text-amber-800">Use this to correct accidental RSVP selections.</p>
+                        <p className="text-[10px] text-amber-700 mt-1">Changes are saved directly to the existing RSVP. The kids statistics and table occupancy will update automatically.</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] uppercase font-bold text-[#4A4F3F] mb-1">Guest Name</label>
+                          <input required type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full px-3 py-2.5 border border-sage-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-sage-400" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase font-bold text-[#4A4F3F] mb-1">Email</label>
+                          <input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className="w-full px-3 py-2.5 border border-sage-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-sage-400" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-[10px] uppercase font-bold text-[#4A4F3F] mb-1">Attendance</label>
+                          <select value={editForm.attending ? 'yes' : 'no'} onChange={(e) => setEditForm({ ...editForm, attending: e.target.value === 'yes' })} className="w-full px-3 py-2.5 border border-sage-200 rounded-xl text-xs">
+                            <option value="yes">Joyfully Attend</option>
+                            <option value="no">Decline</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase font-bold text-[#4A4F3F] mb-1">Adult Seats</label>
+                          <input type="number" min={1} max={11} disabled={!editForm.attending} value={editForm.guestsCount} onChange={(e) => setEditForm({ ...editForm, guestsCount: Number(e.target.value) })} className="w-full px-3 py-2.5 border border-sage-200 rounded-xl text-xs disabled:bg-sage-50 disabled:text-sage-300" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase font-bold text-amber-700 mb-1">Children Seats</label>
+                          <input type="number" min={0} max={11} disabled={!editForm.attending} value={editForm.childSeatsCount} onChange={(e) => setEditForm({ ...editForm, childSeatsCount: Number(e.target.value) })} className="w-full px-3 py-2.5 border border-amber-200 rounded-xl text-xs bg-amber-50/40 disabled:bg-sage-50 disabled:text-sage-300" />
+                        </div>
+                      </div>
+
+                      <div className="text-[10px] text-sage-500 bg-sage-50 rounded-xl px-3 py-2">
+                        Total table seats for this guest: <strong className="text-[#4A4F3F]">{editForm.attending ? (Math.max(1, Number(editForm.guestsCount) || 1) + Math.max(0, Number(editForm.childSeatsCount) || 0)) : 0}</strong>
+                        {editingGuest.tableNumber ? ` · Currently assigned to Table ${editingGuest.tableNumber}` : ' · No table assigned'}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] uppercase font-bold text-[#4A4F3F] mb-1">Dietary Notes</label>
+                          <input type="text" value={editForm.dietary} onChange={(e) => setEditForm({ ...editForm, dietary: e.target.value })} className="w-full px-3 py-2.5 border border-sage-200 rounded-xl text-xs" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase font-bold text-[#4A4F3F] mb-1">Wishes / Note</label>
+                          <input type="text" value={editForm.wishes} onChange={(e) => setEditForm({ ...editForm, wishes: e.target.value })} className="w-full px-3 py-2.5 border border-sage-200 rounded-xl text-xs" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="px-6 py-4 border-t border-sage-100 flex justify-end gap-2 sticky bottom-0 bg-white">
+                      <button type="button" onClick={() => setEditingGuest(null)} disabled={savingEdit} className="px-4 py-2 rounded-xl border border-sage-200 text-xs font-semibold text-sage-600 hover:bg-sage-50 disabled:opacity-50">Cancel</button>
+                      <button type="submit" disabled={savingEdit} className="px-5 py-2 rounded-xl bg-sage-600 text-white text-xs font-semibold hover:bg-sage-700 disabled:opacity-60 flex items-center gap-2">
+                        <Save className="w-3.5 h-3.5" />
+                        {savingEdit ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  </motion.form>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Guestlist Table */}
             <div className="bg-white rounded-2xl border border-sage-100 shadow-xs overflow-hidden">
               {filteredRsvps.length === 0 ? (
@@ -664,7 +838,8 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
                                   <option value="">Unassigned</option>
                                   {Array.from({ length: TABLE_COUNT }, (_, i) => i + 1).map((tableNumber) => {
                                     const occupied = getTableOccupancy(tableNumber, guest.id);
-                                    const allowed = occupied + (guest.guestsCount || 0) <= TABLE_CAPACITY;
+                                    const guestTotalSeats = (guest.guestsCount || 0) + (guest.childSeatsCount || 0);
+                                    const allowed = occupied + guestTotalSeats <= TABLE_CAPACITY;
                                     return <option key={tableNumber} value={tableNumber} disabled={!allowed}>Table {tableNumber}{allowed ? ` (${TABLE_CAPACITY - occupied} free)` : ' (full)'}</option>;
                                   })}
                                 </select>
@@ -687,13 +862,22 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
                             {guest.wishes || <span className="text-sage-300">—</span>}
                           </td>
                           <td className="p-4 text-center">
-                            <button
-                              onClick={() => handleDelete(guest.id)}
-                              className="p-1 px-1.5 rounded-lg border border-sage-200 text-rose-500 hover:bg-rose-50 transition cursor-pointer"
-                              title="Delete RSVP"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => handleOpenEdit(guest)}
+                                className="p-1.5 rounded-lg border border-sage-200 text-sage-600 hover:bg-sage-50 transition cursor-pointer"
+                                title="Edit RSVP"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(guest.id)}
+                                className="p-1.5 rounded-lg border border-sage-200 text-rose-500 hover:bg-rose-50 transition cursor-pointer"
+                                title="Delete RSVP"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
