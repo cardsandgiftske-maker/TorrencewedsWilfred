@@ -60,6 +60,7 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
   const TABLE_CAPACITY = 11;
   const [savingTable, setSavingTable] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [selectedTable, setSelectedTable] = useState<number | null>(null);
 
   const generateGuestCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -71,7 +72,7 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
   const getTableOccupancy = (tableNumber: number, excludingGuestId?: string) =>
     rsvps.reduce((total, guest) => {
       if (!guest.attending || guest.id === excludingGuestId || guest.tableNumber !== tableNumber) return total;
-      return total + (guest.guestsCount || 0);
+      return total + (guest.guestsCount || 0) + (guest.childSeatsCount || 0);
     }, 0);
 
   const handleAssignTable = async (guest: RSVP, tableValue: string) => {
@@ -97,6 +98,9 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
         name: guest.name,
         tableNumber,
         seats,
+        adultSeats: guest.guestsCount || 0,
+        childSeats: guest.childSeatsCount || 0,
+        totalSeats: seats + (guest.childSeatsCount || 0),
         code,
         updatedAt: serverTimestamp()
       });
@@ -197,12 +201,13 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
   const handleExportCSV = () => {
     if (rsvps.length === 0) return;
 
-    const headers = ['Guest Name', 'Email', 'Attending', 'Guests Count', 'Table', 'Guest Code', 'Dietary Restrictions', 'Congratulatory Messages', 'Date Submitted'];
+    const headers = ['Guest Name', 'Email', 'Attending', 'Guests Count', 'Children', 'Table', 'Guest Code', 'Dietary Restrictions', 'Congratulatory Messages', 'Date Submitted'];
     const rows = rsvps.map(r => [
       `"${(r.name || '').replace(/"/g, '""')}"`,
       `"${r.email || ''}"`,
       r.attending ? 'YES' : 'NO',
       r.guestsCount || 0,
+      r.childSeatsCount || 0,
       r.tableNumber || '',
       `"${r.tableCode || ''}"`,
       `"${(r.dietary || '').replace(/"/g, '""')}"`,
@@ -233,6 +238,7 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
         email: newGuest.email.trim() || null,
         attending: newGuest.attending,
         guestsCount: newGuest.attending ? newGuest.guestsCount : 0,
+        childSeatsCount: 0,
         dietary: newGuest.dietary.trim() || null,
         wishes: newGuest.wishes.trim() || null,
         tableNumber: null,
@@ -245,6 +251,7 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
         email: "",
         attending: true,
         guestsCount: 1,
+        childSeatsCount: 0,
         dietary: "",
         wishes: ""
       });
@@ -263,6 +270,8 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
   const declinedRsvps = rsvps.filter(r => !r.attending);
   const totalAttendingSeats = attendingRsvps.reduce((acc, curr) => acc + (curr.guestsCount || 0), 0);
   const dietaryRestrictionsCount = rsvps.filter(r => r.dietary && r.dietary.toLowerCase() !== 'none').length;
+  const accompaniedByKidsCount = attendingRsvps.filter(r => (r.childSeatsCount || 0) > 0).length;
+  const totalChildren = attendingRsvps.reduce((acc, curr) => acc + (curr.childSeatsCount || 0), 0);
 
   const filteredRsvps = rsvps.filter(r => 
     (r.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -377,6 +386,16 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
                 <div>
                   <span className="text-2xl font-serif font-bold text-[#4A4F3F]">{dietaryRestrictionsCount}</span>
                   <span className="text-[10px] uppercase font-semibold text-[#8B7340] tracking-wider block">Dietary Needs</span>
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-2xl border border-default shadow-xs flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+                  <span className="text-lg">👶</span>
+                </div>
+                <div>
+                  <span className="text-2xl font-serif font-bold text-[#4A4F3F]">{accompaniedByKidsCount}</span>
+                  <span className="text-[10px] uppercase font-semibold text-amber-700 tracking-wider block">RSVPs With Kids</span>
+                  <span className="text-[9px] text-sage-400 block">{totalChildren} children total</span>
                 </div>
               </div>
             </div>
@@ -536,18 +555,59 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
                   const remaining = TABLE_CAPACITY - occupied;
                   const isFull = remaining === 0;
                   return (
-                    <div key={tableNumber} className={`rounded-2xl border p-3 text-center ${isFull ? 'border-[#C5A059]/60 bg-[#FBF7EB]' : 'border-sage-100 bg-[#FAF9F6]'}`}>
+                    <button key={tableNumber} type="button" onClick={() => setSelectedTable(tableNumber)} className={`w-full rounded-2xl border p-3 text-center cursor-pointer hover:-translate-y-0.5 hover:shadow-md transition ${isFull ? 'border-[#C5A059]/60 bg-[#FBF7EB]' : 'border-sage-100 bg-[#FAF9F6]'}`}>
                       <div className={`mx-auto w-14 h-14 rounded-full border flex flex-col items-center justify-center ${isFull ? 'border-[#C5A059] bg-white' : 'border-sage-200 bg-white'}`}>
                         <span className="text-[8px] uppercase tracking-wider text-sage-500">Table</span>
                         <span className="font-serif text-lg font-bold text-[#4A4F3F]">{tableNumber}</span>
                       </div>
                       <p className="mt-2 text-[10px] font-bold text-[#4A4F3F]">{occupied}/{TABLE_CAPACITY} seats</p>
                       <p className={`text-[9px] mt-0.5 ${isFull ? 'text-[#8B7340]' : 'text-sage-500'}`}>{isFull ? 'FULL' : `${remaining} available`}</p>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
             </div>
+
+            <AnimatePresence>
+              {selectedTable !== null && (() => {
+                const tableGuests = rsvps.filter(g => g.attending && g.tableNumber === selectedTable);
+                const occupied = getTableOccupancy(selectedTable);
+                return (
+                  <motion.div className="fixed inset-0 z-[70] bg-[#3B3E31]/60 backdrop-blur-sm flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedTable(null)}>
+                    <motion.div className="bg-white w-full max-w-lg max-h-[80vh] rounded-3xl shadow-2xl overflow-hidden" initial={{ y: 20, scale: 0.97 }} animate={{ y: 0, scale: 1 }} onClick={(e) => e.stopPropagation()}>
+                      <div className="bg-sage-600 text-white px-6 py-5 flex items-center justify-between">
+                        <div>
+                          <p className="text-[9px] uppercase tracking-[0.25em] text-champagne-300">Reception Seating</p>
+                          <h4 className="font-serif text-2xl font-semibold">Table {selectedTable}</h4>
+                          <p className="text-[10px] text-white/75 mt-1">{occupied}/{TABLE_CAPACITY} seats allocated</p>
+                        </div>
+                        <button type="button" onClick={() => setSelectedTable(null)} className="p-2 rounded-full hover:bg-sage-700"><X className="w-5 h-5" /></button>
+                      </div>
+                      <div className="p-5 overflow-y-auto max-h-[55vh]">
+                        {tableGuests.length === 0 ? (
+                          <div className="py-10 text-center">
+                            <p className="font-serif text-lg text-[#4A4F3F]">No guests assigned</p>
+                            <p className="text-xs text-sage-500 mt-1">This table currently has {TABLE_CAPACITY} seats available.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {tableGuests.map(guest => (
+                              <div key={guest.id} className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-[#FAF9F6] border border-sage-100">
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-sm text-[#4A4F3F]">{guest.name}</p>
+                                  <p className="text-[10px] text-sage-500 mt-1">{guest.guestsCount || 0} adult seat(s){(guest.childSeatsCount || 0) > 0 ? ` · ${guest.childSeatsCount} child seat(s)` : ''}</p>
+                                </div>
+                                {guest.tableCode && <span className="font-mono text-[9px] tracking-widest px-2 py-1 rounded-lg border border-sage-200 bg-white">{guest.tableCode}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                );
+              })()}
+            </AnimatePresence>
 
             {/* Guestlist Table */}
             <div className="bg-white rounded-2xl border border-sage-100 shadow-xs overflow-hidden">
@@ -564,6 +624,7 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
                         <th className="p-4">Email</th>
                         <th className="p-4">Attendance</th>
                         <th className="p-4 text-center">Seats</th>
+                        <th className="p-4 text-center">Kids</th>
                         <th className="p-4">Table</th>
                         <th className="p-4">Guest Code</th>
                         <th className="p-4">Dietary Notes</th>
@@ -587,6 +648,9 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
                           </td>
                           <td className="p-4 text-center font-bold font-mono">
                             {guest.attending ? guest.guestsCount : '—'}
+                          </td>
+                          <td className="p-4 text-center font-bold font-mono">
+                            {guest.attending ? (guest.childSeatsCount || 0) : '—'}
                           </td>
                           <td className="p-4 min-w-[150px]">
                             {guest.attending ? (
