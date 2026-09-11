@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Lock, 
@@ -34,21 +34,7 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [rsvpsTick, setRsvpsTick] = useState(0);
   const [copiedText, setCopiedText] = useState<'mpesa' | 'bank' | null>(null);
-  const [showScrollReminder, setShowScrollReminder] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleScroll = () => {
-      // Show reminder if user has scrolled down a bit to remind them to confirm attendance
-      if (window.scrollY > 120) {
-        setShowScrollReminder(true);
-      } else {
-        setShowScrollReminder(false);
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isOpen]);
 
   const handleCopy = (text: string, type: 'mpesa' | 'bank') => {
     navigator.clipboard.writeText(text);
@@ -101,33 +87,7 @@ export default function App() {
               </button>
             </div>
 
-            {/* Scroll-activated Floating Confirm Attendance Reminder */}
-            <AnimatePresence>
-              {showScrollReminder && (
-                <motion.div
-                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 30, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  className="fixed bottom-6 left-6 z-40"
-                >
-                  <button
-                    onClick={() => {
-                      document.getElementById('rsvp-section')?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="flex items-center gap-2 px-5 py-3.5 rounded-full bg-[#8F9779] hover:bg-[#7D8568] text-[#FAF9F5] shadow-lg border border-sage-600/30 font-semibold text-xs tracking-wider uppercase cursor-pointer transform hover:scale-105 active:scale-95 transition"
-                    title="Confirm your wedding attendance template"
-                  >
-                    <span className="relative flex h-2 w-2 mr-0.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#DEC186] opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#DEC186]"></span>
-                    </span>
-                    <ClipboardCheck className="w-4 h-4 text-[#DEC186]" />
-                    <span>RSVP Closed</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* RSVP submissions are closed; no guest RSVP action is shown. */}
 
             {/* ================= SECTION A: HERO HEADER ================= */}
             <header className="relative w-full min-h-screen md:min-h-[92vh] flex flex-col items-center justify-center text-center px-4 pt-32 pb-24 bg-gradient-to-b from-[#FDFBF7] via-[#FAF7F2] to-[#FAF9F5] overflow-hidden">
