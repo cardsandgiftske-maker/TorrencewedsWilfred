@@ -32,7 +32,6 @@ import { DETAILS } from './types';
 import lakesidePathway from './assets/images/lakeside_pathway_1780905636052.png';
 import couplePhoto1 from './assets/images/torrence-wilfred-01.jpeg';
 import couplePhoto2 from './assets/images/torrence-wilfred-02.jpeg';
-import couplePhoto2 from './assets/images/torrence-wilfred-03.jpeg';
 
 export default function App() {
   const [isOpen, setIsOpen] = useState(false);
