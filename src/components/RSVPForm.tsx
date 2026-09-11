@@ -14,11 +14,41 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 
+// Guest RSVP submissions are closed. Existing RSVPs remain editable in Admin Panel.
+const RSVP_CLOSED = true;
+
 interface RSVPFormProps {
   onRSVPSubmitted: () => void;
 }
 
 export default function RSVPForm({ onRSVPSubmitted }: RSVPFormProps) {
+  if (RSVP_CLOSED) {
+    return (
+      <section id="rsvp-section" className="relative overflow-hidden py-16 bg-[#FAF7F2] border-b border-sage-100">
+        <div className="relative w-full max-w-2xl mx-auto px-4">
+          <div className="bg-[#FAF8F5] border border-sage-200/60 rounded-3xl p-8 md:p-12 shadow-lg text-center">
+            <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-sage-50 border border-sage-200 flex items-center justify-center">
+              <Check className="w-6 h-6 text-sage-600" />
+            </div>
+            <span className="font-serif text-[#C5A059] text-xs uppercase tracking-[0.25em] font-semibold block mb-2">
+              R.S.V.P
+            </span>
+            <h3 className="font-serif text-2xl md:text-3xl font-medium text-[#4A4F3F] tracking-wide">
+              RSVP Is Now Closed
+            </h3>
+            <p className="text-sm text-[#5D634E] mt-4 leading-relaxed max-w-md mx-auto">
+              Thank you for your response. RSVP submissions for Torrence & Wilfred's wedding have now closed.
+            </p>
+            <div className="w-12 h-[1px] bg-champagne-500 mx-auto mt-6 opacity-50" />
+            <p className="text-xs text-sage-600 mt-5 italic">
+              We look forward to celebrating with you.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   const [formData, setFormData] = useState({
     name: '',
     attending: true,
