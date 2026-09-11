@@ -22,8 +22,8 @@ import {
 import DigitalEnvelope from './components/DigitalEnvelope';
 import Countdown from './components/Countdown';
 import ProgramTimeline from './components/ProgramTimeline';
-import RSVPForm from './components/RSVPForm';
 import AdminPanel from './components/AdminPanel';
+import TableLookup from './components/TableLookup';
 import { DETAILS } from './types';
 
 // @ts-ignore
@@ -123,7 +123,7 @@ export default function App() {
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-[#DEC186]"></span>
                     </span>
                     <ClipboardCheck className="w-4 h-4 text-[#DEC186]" />
-                    <span>Confirm Attendance</span>
+                    <span>RSVP Closed</span>
                   </button>
                 </motion.div>
               )}
@@ -360,16 +360,38 @@ export default function App() {
               </div>
             </section>
 
-            {/* ================= SECTION G: RSVP FORM PORTAL ================= */}
+            {/* ================= SECTION G: TABLE ALLOCATION ================= */}
+            <TableLookup />
+
+            {/* ================= SECTION H: RSVP CLOSED ================= */}
             <section id="rsvp-section" className="relative overflow-hidden py-16 bg-[#FAF7F2] border-b border-sage-100">
               <div 
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none select-none opacity-[0.020]" 
                 style={{ backgroundImage: `url(${lakesidePathway})` }} 
               />
-              <RSVPForm onRSVPSubmitted={triggerRefresh} />
+              <div className="relative w-full max-w-2xl mx-auto px-4">
+                <div className="bg-[#FAF8F5] border border-sage-200/60 rounded-3xl p-8 md:p-12 shadow-lg text-center">
+                  <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-sage-50 border border-sage-200 flex items-center justify-center">
+                    <ClipboardCheck className="w-6 h-6 text-sage-600" />
+                  </div>
+                  <span className="font-serif text-[#C5A059] text-xs uppercase tracking-[0.25em] font-semibold block mb-2">
+                    R.S.V.P
+                  </span>
+                  <h3 className="font-serif text-2xl md:text-3xl font-medium text-[#4A4F3F] tracking-wide">
+                    RSVP Is Now Closed
+                  </h3>
+                  <p className="text-sm text-[#5D634E] mt-4 leading-relaxed max-w-md mx-auto">
+                    Thank you for your response. RSVP submissions for Torrence & Wilfred's wedding have now closed.
+                  </p>
+                  <div className="w-12 h-[1px] bg-champagne-500 mx-auto mt-6 opacity-50" />
+                  <p className="text-xs text-sage-600 mt-5 italic">
+                    We look forward to celebrating with you.
+                  </p>
+                </div>
+              </div>
             </section>
 
-            {/* ================= SECTION H: FOOTER ================= */}
+            {/* ================= SECTION I: FOOTER ================= */}
             <footer className="relative overflow-hidden py-16 text-center select-none bg-[#FAF9F6] border-t border-sage-100/30">
               <div 
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none select-none opacity-[0.020]" 
@@ -398,7 +420,6 @@ export default function App() {
               {showAdmin && (
                 <AdminPanel 
                   onClosed={() => setShowAdmin(false)} 
-                  rsvpsCountChangedTrigger={rsvpsTick}
                   triggerRefresh={triggerRefresh}
                 />
               )}
