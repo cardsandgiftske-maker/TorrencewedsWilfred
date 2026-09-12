@@ -330,7 +330,7 @@ export default function HeroCarousel() {
 
                 <Sparkles className="w-3 h-3 text-[#C5A059]" />
 
-                <span>Wedding Venue</span>
+                <span>Torrence & Wilfred</span>
 
               </span>
 
