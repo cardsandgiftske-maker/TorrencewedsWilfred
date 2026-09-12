@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Lock, 
@@ -22,8 +22,8 @@ import {
 import DigitalEnvelope from './components/DigitalEnvelope';
 import Countdown from './components/Countdown';
 import ProgramTimeline from './components/ProgramTimeline';
-import RSVPForm from './components/RSVPForm';
 import AdminPanel from './components/AdminPanel';
+import HeroCarousel from './components/HeroCarousel';
 import TableLookup from './components/TableLookup';
 import { DETAILS } from './types';
 
@@ -35,21 +35,7 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [rsvpsTick, setRsvpsTick] = useState(0);
   const [copiedText, setCopiedText] = useState<'mpesa' | 'bank' | null>(null);
-  const [showScrollReminder, setShowScrollReminder] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleScroll = () => {
-      // Show reminder if user has scrolled down a bit to remind them to confirm attendance
-      if (window.scrollY > 120) {
-        setShowScrollReminder(true);
-      } else {
-        setShowScrollReminder(false);
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isOpen]);
 
   const handleCopy = (text: string, type: 'mpesa' | 'bank') => {
     navigator.clipboard.writeText(text);
@@ -102,37 +88,16 @@ export default function App() {
               </button>
             </div>
 
-            {/* Scroll-activated Floating Confirm Attendance Reminder */}
-            <AnimatePresence>
-              {showScrollReminder && (
-                <motion.div
-                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 30, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  className="fixed bottom-6 left-6 z-40"
-                >
-                  <button
-                    onClick={() => {
-                      document.getElementById('rsvp-section')?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="flex items-center gap-2 px-5 py-3.5 rounded-full bg-[#8F9779] hover:bg-[#7D8568] text-[#FAF9F5] shadow-lg border border-sage-600/30 font-semibold text-xs tracking-wider uppercase cursor-pointer transform hover:scale-105 active:scale-95 transition"
-                    title="Confirm your wedding attendance template"
-                  >
-                    <span className="relative flex h-2 w-2 mr-0.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#DEC186] opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#DEC186]"></span>
-                    </span>
-                    <ClipboardCheck className="w-4 h-4 text-[#DEC186]" />
-                    <span>Confirm Attendance</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* RSVP submissions are closed; no guest RSVP action is shown. */}
 
             {/* ================= SECTION A: HERO HEADER ================= */}
             <header className="relative w-full min-h-screen md:min-h-[92vh] flex flex-col items-center justify-center text-center px-4 pt-32 pb-24 bg-gradient-to-b from-[#FDFBF7] via-[#FAF7F2] to-[#FAF9F5] overflow-hidden">
               
+              {/* Dedicated Hero Photo Carousel */}
+              <div className="w-full max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto mb-8 relative z-10">
+                <HeroCarousel />
+              </div>
+
               {/* Subtle background photo watermark */}
               <div 
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none select-none opacity-[0.025]" 
@@ -364,13 +329,32 @@ export default function App() {
             {/* ================= SECTION G: TABLE ALLOCATION ================= */}
             <TableLookup />
 
-            {/* ================= SECTION H: RSVP FORM PORTAL ================= */}
+            {/* ================= SECTION H: RSVP CLOSED ================= */}
             <section id="rsvp-section" className="relative overflow-hidden py-16 bg-[#FAF7F2] border-b border-sage-100">
               <div 
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none select-none opacity-[0.020]" 
                 style={{ backgroundImage: `url(${lakesidePathway})` }} 
               />
-              <RSVPForm onRSVPSubmitted={triggerRefresh} />
+              <div className="relative w-full max-w-2xl mx-auto px-4">
+                <div className="bg-[#FAF8F5] border border-sage-200/60 rounded-3xl p-8 md:p-12 shadow-lg text-center">
+                  <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-sage-50 border border-sage-200 flex items-center justify-center">
+                    <ClipboardCheck className="w-6 h-6 text-sage-600" />
+                  </div>
+                  <span className="font-serif text-[#C5A059] text-xs uppercase tracking-[0.25em] font-semibold block mb-2">
+                    R.S.V.P
+                  </span>
+                  <h3 className="font-serif text-2xl md:text-3xl font-medium text-[#4A4F3F] tracking-wide">
+                    RSVP Is Now Closed
+                  </h3>
+                  <p className="text-sm text-[#5D634E] mt-4 leading-relaxed max-w-md mx-auto">
+                    Thank you for your response. RSVP submissions for Torrence & Wilfred's wedding have now closed.
+                  </p>
+                  <div className="w-12 h-[1px] bg-champagne-500 mx-auto mt-6 opacity-50" />
+                  <p className="text-xs text-sage-600 mt-5 italic">
+                    We look forward to celebrating with you.
+                  </p>
+                </div>
+              </div>
             </section>
 
             {/* ================= SECTION I: FOOTER ================= */}
