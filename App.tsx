@@ -25,6 +25,7 @@ import DigitalEnvelope from './components/DigitalEnvelope';
 import Countdown from './components/Countdown';
 import ProgramTimeline from './components/ProgramTimeline';
 import AdminPanel from './components/AdminPanel';
+import HeroCarousel from './components/HeroCarousel';
 import TableLookup from './components/TableLookup';
 import { DETAILS } from './types';
 
