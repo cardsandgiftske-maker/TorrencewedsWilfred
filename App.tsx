@@ -90,8 +90,8 @@ export default function App() {
 
             {/* RSVP submissions are closed; no guest RSVP action is shown. */}
 
-            {/* ================= SECTION A: HERO HEADER ================= */}
-            <header className="relative w-full min-h-screen md:min-h-[92vh] flex flex-col items-center justify-center text-center px-4 pt-32 pb-24 bg-gradient-to-b from-[#FDFBF7] via-[#FAF7F2] to-[#FAF9F5] overflow-hidden">
+           {/* ================= SECTION A: HERO HEADER ================= */}
+            <header className="relative w-full min-h-screen md:min-h-[92vh] flex flex-col items-center justify-center text-center px-4 pt-16 sm:pt-20 md:pt-24 pb-24 bg-gradient-to-b from-[#FDFBF7] via-[#FAF7F2] to-[#FAF9F5] overflow-hidden">
               
               {/* Subtle background photo watermark */}
               <div 
@@ -103,10 +103,13 @@ export default function App() {
               <div className="absolute top-[10%] left-[5%] w-[45vw] h-[45vw] md:w-[35vw] md:h-[35vw] rounded-full bg-[#F2EDDB] opacity-50 blur-[100px] pointer-events-none select-none" />
               <div className="absolute bottom-[10%] right-[3%] w-[50vw] h-[50vw] md:w-[35vw] md:h-[35vw] rounded-full bg-[#F5EED8] opacity-60 blur-[110px] pointer-events-none select-none" />
 
-
+              {/* Top Photo Carousel showcasing 3 views of Naiposha Gardens */}
+              <div className="w-full max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto mb-8 relative z-10">
+                <HeroCarousel />
+              </div>
 
               {/* Clean, double-circular monogram as shown in the ecard, safely brought down to prevent clipping */}
-              <div className="mt-12 mb-8 select-none relative z-10">
+              <div className="mt-2 mb-8 select-none relative z-10">
                 <div className="w-24 h-24 rounded-full border border-[#C5A059] p-1 flex items-center justify-center bg-[#FAF9F6]/95 shadow-sm relative mx-auto group hover:scale-[1.03] transition-transform duration-300">
                   <div className="w-full h-full rounded-full border border-dashed border-[#C5A059]/40 flex flex-col items-center justify-center">
                     <span className="font-serif text-xl tracking-[0.2em] font-extrabold text-[#4A4F3F] pl-1 select-none">
