@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Lock, 
@@ -16,48 +16,25 @@ import {
   ArrowRight,
   ClipboardCheck,
   Building,
-  Flower,
-  ChevronLeft,
-  ChevronRight
+  Flower
 } from 'lucide-react';
 
 import DigitalEnvelope from './components/DigitalEnvelope';
+import HeroCarousel from './components/HeroCarousel';
 import Countdown from './components/Countdown';
 import ProgramTimeline from './components/ProgramTimeline';
 import AdminPanel from './components/AdminPanel';
-import HeroCarousel from './components/HeroCarousel';
 import TableLookup from './components/TableLookup';
 import { DETAILS } from './types';
 
 // @ts-ignore
 import lakesidePathway from './assets/images/lakeside_pathway_1780905636052.png';
-import couplePhoto1 from './assets/images/torrence-wilfred-01.jpg';
-import couplePhoto2 from './assets/images/torrence-wilfred-02.jpg';
 
 export default function App() {
   const [isOpen, setIsOpen] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [rsvpsTick, setRsvpsTick] = useState(0);
   const [copiedText, setCopiedText] = useState<'mpesa' | 'bank' | null>(null);
-  const [heroSlide, setHeroSlide] = useState(0);
-
-  const heroPhotos = [couplePhoto1, couplePhoto2];
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setHeroSlide((current) => (current + 1) % heroPhotos.length);
-    }, 5500);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const previousHeroSlide = () => {
-    setHeroSlide((current) => (current - 1 + heroPhotos.length) % heroPhotos.length);
-  };
-
-  const nextHeroSlide = () => {
-    setHeroSlide((current) => (current + 1) % heroPhotos.length);
-  };
 
 
   const handleCopy = (text: string, type: 'mpesa' | 'bank') => {
@@ -114,130 +91,81 @@ export default function App() {
             {/* RSVP submissions are closed; no guest RSVP action is shown. */}
 
             {/* ================= SECTION A: HERO HEADER ================= */}
-            <header className="relative w-full min-h-screen md:min-h-[92vh] flex flex-col text-center bg-[#FAF9F5] overflow-hidden">
+            <header className="relative w-full min-h-screen md:min-h-[92vh] flex flex-col items-center justify-center text-center px-4 pt-32 pb-24 bg-gradient-to-b from-[#FDFBF7] via-[#FAF7F2] to-[#FAF9F5] overflow-hidden">
+              
+              {/* Subtle background photo watermark */}
+              <div 
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none select-none opacity-[0.025]" 
+                style={{ backgroundImage: `url(${lakesidePathway})` }} 
+              />
 
-              {/* Couple photo carousel */}
-              <div className="relative w-full h-[54vh] md:h-[58vh] overflow-hidden bg-[#E8E9E1]">
-                <AnimatePresence mode="sync">
-                  <motion.div
-                    key={`hero-bg-${heroSlide}`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 1.1, ease: 'easeInOut' }}
-                    className="absolute inset-0"
-                  >
-                    <img
-                      src={heroPhotos[heroSlide]}
-                      alt={`Torrence and Wilfred — engagement photo ${heroSlide + 1}`}
-                      className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-35"
-                    />
-                    <div className="absolute inset-0 bg-[#4A4F3F]/10" />
-                  </motion.div>
-                </AnimatePresence>
+              {/* Vibrant soft gold and champagne warm glowing highlights */}
+              <div className="absolute top-[10%] left-[5%] w-[45vw] h-[45vw] md:w-[35vw] md:h-[35vw] rounded-full bg-[#F2EDDB] opacity-50 blur-[100px] pointer-events-none select-none" />
+              <div className="absolute bottom-[10%] right-[3%] w-[50vw] h-[50vw] md:w-[35vw] md:h-[35vw] rounded-full bg-[#F5EED8] opacity-60 blur-[110px] pointer-events-none select-none" />
 
-                <AnimatePresence mode="wait">
-                  <motion.img
-                    key={`hero-photo-${heroSlide}`}
-                    src={heroPhotos[heroSlide]}
-                    alt={`Torrence and Wilfred — engagement photo ${heroSlide + 1}`}
-                    initial={{ opacity: 0, scale: 1.025 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.995 }}
-                    transition={{ duration: 0.9, ease: 'easeInOut' }}
-                    className="absolute inset-0 w-full h-full object-contain select-none"
-                    draggable={false}
-                  />
-                </AnimatePresence>
 
-                {/* Soft cinematic gradient keeps the carousel integrated with the invitation */}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-[#FAF9F5]/75 pointer-events-none" />
 
-                {/* Carousel controls */}
-                <button
-                  type="button"
-                  onClick={previousHeroSlide}
-                  aria-label="Previous photo"
-                  className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-11 md:h-11 rounded-full bg-white/75 backdrop-blur-sm border border-white/70 text-[#4A4F3F] shadow-md flex items-center justify-center hover:bg-white hover:scale-105 transition"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={nextHeroSlide}
-                  aria-label="Next photo"
-                  className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-11 md:h-11 rounded-full bg-white/75 backdrop-blur-sm border border-white/70 text-[#4A4F3F] shadow-md flex items-center justify-center hover:bg-white hover:scale-105 transition"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-
-                <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-                  {heroPhotos.map((_, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => setHeroSlide(index)}
-                      aria-label={`View photo ${index + 1}`}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        heroSlide === index ? 'w-8 bg-[#C5A059]' : 'w-2 bg-white/80'
-                      }`}
-                    />
-                  ))}
+              {/* Clean, double-circular monogram as shown in the ecard, safely brought down to prevent clipping */}
+              <div className="mt-12 mb-8 select-none relative z-10">
+                <div className="w-24 h-24 rounded-full border border-[#C5A059] p-1 flex items-center justify-center bg-[#FAF9F6]/95 shadow-sm relative mx-auto group hover:scale-[1.03] transition-transform duration-300">
+                  <div className="w-full h-full rounded-full border border-dashed border-[#C5A059]/40 flex flex-col items-center justify-center">
+                    <span className="font-serif text-xl tracking-[0.2em] font-extrabold text-[#4A4F3F] pl-1 select-none">
+                      T <span className="text-[#C5A059] font-light mx-0.5">|</span> W
+                    </span>
+                    {/* Laurel branch motif matching bottom of the seal/monogram ring in the ecard */}
+                    <div className="text-[10px] text-[#C5A059] leading-none mb-1 opacity-80 select-none">🌿</div>
+                  </div>
                 </div>
               </div>
 
-              {/* Invitation copy beneath the photos */}
-              <div className="relative flex-1 flex flex-col items-center justify-center px-4 pt-7 pb-14 md:pt-8 md:pb-16">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-px bg-[#C5A059]/55" />
-
-                {/* Clean, double-circular monogram */}
-                <div className="mb-5 select-none relative z-10">
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border border-[#C5A059] p-1 flex items-center justify-center bg-[#FAF9F6]/95 shadow-sm relative mx-auto">
-                    <div className="w-full h-full rounded-full border border-dashed border-[#C5A059]/40 flex flex-col items-center justify-center">
-                      <span className="font-serif text-base md:text-lg tracking-[0.2em] font-extrabold text-[#4A4F3F] pl-1 select-none">
-                        T <span className="text-[#C5A059] font-light mx-0.5">|</span> W
-                      </span>
-                      <div className="text-[9px] text-[#C5A059] leading-none mb-0.5 opacity-80 select-none">🌿</div>
-                    </div>
-                  </div>
-                </div>
-
-                <span className="font-serif text-[10px] md:text-xs uppercase tracking-[0.3em] text-[#C5A059] font-bold block mb-2">
-                  Together with their families,
+              {/* Core Wedding invite message */}
+              <span className="font-serif text-xs uppercase tracking-[0.3em] text-[#C5A059] font-bold block mb-4">
+                Together with their families,
+              </span>
+              
+              <div className="my-6">
+                <h1 className="font-script text-[#C5A059] text-7xl md:text-9xl font-normal tracking-wide leading-none select-none drop-shadow-[0_2px_4px_rgba(197,160,89,0.2)]">
+                  Torrence
+                </h1>
+                
+                <p className="font-serif text-3xl text-[#5F6D48] italic my-4 font-light select-none sm:my-6">
+                  &
+                </p>
+                
+                <h1 className="font-script text-[#C5A059] text-7xl md:text-9xl font-normal tracking-wide leading-none select-none drop-shadow-[0_2px_4px_rgba(197,160,89,0.2)]">
+                  Wilfred
+                </h1>
+              </div>
+ 
+              <div className="w-16 h-[1.5px] bg-[#C5A059] mb-8 opacity-75" />
+ 
+              <span className="font-serif text-sm tracking-[0.25em] text-[#556B2F] font-bold uppercase block mb-3">
+                Cordially invite you to celebrate their union
+              </span>
+ 
+              {/* Dynamic Spectacular Golden Date Stamp Frame to make it POP */}
+              <div id="wedding_date_pop" className="my-10 relative px-10 py-5 border border-[#C5A059]/40 bg-white/95 rounded-2xl shadow-[0_15px_30px_rgba(143,151,121,0.12)] max-w-sm mx-auto scale-105 z-10">
+                <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-[#8F9779] rounded-full border border-white" />
+                <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-[#8F9779] rounded-full border border-white" />
+                
+                <span className="text-[10px] tracking-[0.3em] font-bold uppercase block text-[#8F9779] mb-1">
+                  Save our Date
                 </span>
-
-                <div className="my-2 md:my-3">
-                  <h1 className="font-script text-[#C5A059] text-5xl sm:text-6xl md:text-7xl font-normal tracking-wide leading-none select-none drop-shadow-[0_2px_4px_rgba(197,160,89,0.2)]">
-                    Torrence
-                  </h1>
-                  <p className="font-serif text-2xl md:text-3xl text-[#5F6D48] italic my-2 md:my-3 font-light select-none">&</p>
-                  <h1 className="font-script text-[#C5A059] text-5xl sm:text-6xl md:text-7xl font-normal tracking-wide leading-none select-none drop-shadow-[0_2px_4px_rgba(197,160,89,0.2)]">
-                    Wilfred
-                  </h1>
-                </div>
-
-                <div className="w-12 h-px bg-[#C5A059] mb-4 opacity-75" />
-
-                <span className="font-serif text-[10px] md:text-sm tracking-[0.22em] text-[#556B2F] font-bold uppercase block mb-4">
-                  Cordially invite you to celebrate their union
+                <span className="font-serif text-[#4A4F3F] text-2xl md:text-3xl font-extrabold tracking-wide block">
+                  SEPTEMBER 26, 2026
                 </span>
-
-                <div id="wedding_date_pop" className="relative px-7 py-3 md:px-9 md:py-4 border border-[#C5A059]/40 bg-white/95 rounded-2xl shadow-[0_15px_30px_rgba(143,151,121,0.12)] max-w-sm mx-auto scale-[1.02] z-10">
-                  <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#8F9779] rounded-full border border-white" />
-                  <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#8F9779] rounded-full border border-white" />
-                  <span className="text-[9px] tracking-[0.3em] font-bold uppercase block text-[#8F9779] mb-1">Save our Date</span>
-                  <span className="font-serif text-[#4A4F3F] text-lg md:text-2xl font-extrabold tracking-wide block">SEPTEMBER 26, 2026</span>
-                </div>
-
-                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/90 border border-sage-200/60 shadow-xs text-[10px] md:text-sm font-sans mt-3">
-                  <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#C5A059]" />
-                  <span className="font-medium text-[#4A4F3F]">Naiposha Gardens, Tigoni</span>
-                </div>
-
-                <div className="mt-5 flex flex-col items-center gap-1 text-[#556B2F] font-serif text-[9px] tracking-widest uppercase opacity-85">
-                  <span>The Celebration Details</span>
-                  <span className="text-sm animate-bounce">↓</span>
-                </div>
+              </div>
+ 
+              {/* Location Badge */}
+              <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/90 border border-sage-200/60 shadow-xs text-xs md:text-sm font-sans mt-2 transform hover:scale-[1.03] transition-transform">
+                <MapPin className="w-4 h-4 text-[#C5A059]" />
+                <span className="font-medium text-[#4A4F3F]">Naiposha Gardens, Tigoni</span>
+              </div>
+ 
+              {/* Indicator downward arrow */}
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-[#556B2F] font-serif text-[10px] tracking-widest uppercase opacity-85 animate-bounce">
+                <span>The Celebration Details</span>
+                <span className="text-sm">↓</span>
               </div>
             </header>
 
