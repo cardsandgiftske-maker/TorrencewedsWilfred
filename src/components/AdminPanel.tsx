@@ -57,7 +57,7 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
     wishes: ''
   });
 
-  const TABLE_COUNT = 24;
+  const TABLE_COUNT = 28;
   const TABLE_CAPACITY = 11;
   const [savingTable, setSavingTable] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -299,16 +299,18 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
       `"${r.timestamp || ''}"`
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    
-    const encodedUri = encodeURI(csvContent);
+    // Use a Blob instead of a data URI so large guest lists are exported in full.
+    // A data URI can be truncated by the browser when the RSVP list becomes large.
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "Torrence_Wilfred_Wedding_RSVP_List.csv");
+    link.href = url;
+    link.download = "Torrence_Wilfred_Wedding_RSVP_List.csv";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Append new manual entry straight to your collection
@@ -626,7 +628,7 @@ export default function AdminPanel({ onClosed, triggerRefresh }: AdminPanelProps
                     <LayoutGrid className="w-4 h-4 text-[#C5A059]" />
                     <h4 className="font-serif text-lg font-semibold">Reception Table Allocation</h4>
                   </div>
-                  <p className="text-[11px] text-sage-500 mt-1">24 restaurant tables · maximum 11 seats per table</p>
+                  <p className="text-[11px] text-sage-500 mt-1">28 restaurant tables · maximum 11 seats per table</p>
                 </div>
                 <div className="text-right">
                   <span className="font-serif text-xl font-bold text-[#4A4F3F]">{rsvps.filter(g => g.attending && g.tableNumber).reduce((n, g) => n + (g.guestsCount || 0), 0)}</span>
